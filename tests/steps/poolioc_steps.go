@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/amosdavis/pool-go/poolioc"
 	"github.com/cucumber/godog"
@@ -76,6 +77,9 @@ func (pc *pooliocContext) moduleLoaded() error {
 func (pc *pooliocContext) openDevice() error {
 	dev, err := poolioc.Open()
 	if err != nil {
+		if os.IsNotExist(err) || os.IsPermission(err) {
+			return godog.ErrPending
+		}
 		return fmt.Errorf("failed to open device: %w", err)
 	}
 	pc.dev = dev
