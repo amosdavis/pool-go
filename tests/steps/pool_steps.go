@@ -4,8 +4,10 @@ package steps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 	"syscall"
 	"time"
@@ -13,6 +15,11 @@ import (
 	"github.com/amosdavis/pool-go/pool"
 	"github.com/cucumber/godog"
 )
+
+// deviceUnavailable returns true when /dev/pool is not present.
+func deviceUnavailable(err error) bool {
+	return errors.Is(err, syscall.ENOENT) || errors.Is(err, os.ErrNotExist) || errors.Is(err, os.ErrPermission)
+}
 
 type poolContext struct {
 	listener *pool.Listener
@@ -132,6 +139,9 @@ func (pc *poolContext) dialTimedOut() error {
 func (pc *poolContext) listenOn(network, address string) error {
 	ln, err := pool.Listen(network, address)
 	if err != nil {
+		if deviceUnavailable(err) {
+			return godog.ErrPending
+		}
 		return err
 	}
 	pc.listener = ln

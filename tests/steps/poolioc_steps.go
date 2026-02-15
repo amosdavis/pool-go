@@ -4,9 +4,11 @@ package steps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"syscall"
 
 	"github.com/amosdavis/pool-go/poolioc"
 	"github.com/cucumber/godog"
@@ -77,7 +79,7 @@ func (pc *pooliocContext) moduleLoaded() error {
 func (pc *pooliocContext) openDevice() error {
 	dev, err := poolioc.Open()
 	if err != nil {
-		if os.IsNotExist(err) || os.IsPermission(err) {
+		if errors.Is(err, syscall.ENOENT) || errors.Is(err, os.ErrNotExist) || errors.Is(err, os.ErrPermission) {
 			return godog.ErrPending
 		}
 		return fmt.Errorf("failed to open device: %w", err)
